@@ -1,0 +1,88 @@
+package client
+
+import (
+	toolchainv1alpha1 "github.com/codeready-toolchain/api/api/v1alpha1"
+	routev1 "github.com/openshift/api/route/v1"
+	applicationservice "github.com/redhat-appstudio/application-service/api/v1alpha1"
+	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
+	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/kubernetes"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	crclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	quotav1 "github.com/openshift/api/quota/v1"
+	templatev1 "github.com/openshift/api/template/v1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	appsv1 "k8s.io/api/apps/v1"
+	"github.com/rs/zerolog/log"
+
+)
+
+type K8sClient struct {
+	kubeClient     *kubernetes.Clientset
+	crClient       crclient.Client
+	pipelineClient pipelineclientset.Interface
+}
+
+var (
+	scheme = runtime.NewScheme()
+)
+
+func init() {
+	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+	utilruntime.Must(applicationservice.AddToScheme(scheme))
+	utilruntime.Must(tekton.AddToScheme(scheme))
+	utilruntime.Must(routev1.AddToScheme(scheme))
+	utilruntime.Must(toolchainv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(quotav1.Install(scheme))
+	utilruntime.Must(templatev1.AddToScheme(scheme))
+	utilruntime.Must(appsv1.AddToScheme(scheme))
+	utilruntime.Must(operatorsv1alpha1.AddToScheme(scheme))
+}
+
+// Kube returns the clientset for Kubernetes upstream.
+func (c *K8sClient) KubeInterface() kubernetes.Interface {
+	return c.kubeClient
+}
+
+// Return a rest client to perform CRUD operations on Kubernetes objects
+func (c *K8sClient) KubeRest() crclient.Client {
+	return c.crClient
+}
+
+func (c *K8sClient) PipelineClient() pipelineclientset.Interface {
+	return c.pipelineClient
+}
+
+// NewHASClient creates kubernetes client wrapper
+func NewK8SClient() (*K8sClient, error) {
+	cfg, err := config.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+	log.Info().Msg("📔 init using the present kube config")
+	client, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	crClient, err := crclient.New(cfg, crclient.Options{
+		Scheme: scheme,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	pipelineClient, err := pipelineclientset.NewForConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return &K8sClient{
+		kubeClient:     client,
+		crClient:       crClient,
+		pipelineClient: pipelineClient,
+	}, nil
+}

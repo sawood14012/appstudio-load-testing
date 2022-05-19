@@ -11,3 +11,15 @@ jobs:
       - uses: docker://chinthakagodawita/autoupdate-action:v1
         env:
           GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          PR_FILTER: "labelled"
+          PR_LABELS: "approved,lgtm"
+      - run: echo ${{ github.event }}
+     # - name: Create fail comment
+       # if: failure()
+       # uses: peter-evans/create-or-update-comment@v1
+       # with:
+       #   edit-mode: replace
+       #   comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+       #   body: |
+       #    **Edit:** :facepalm: [Build and Push Image Failed]( https://github.com/${{github.repository}}/actions/runs/${{github.run_id}})
+       #   reactions: confused

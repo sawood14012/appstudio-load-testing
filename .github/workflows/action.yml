@@ -13,7 +13,7 @@ jobs:
           GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
           PR_FILTER: "labelled"
           PR_LABELS: "approved,lgtm"
-      - run: echo ${{ github.event }}
+      - run: ${{ toJson(github) }}
      # - name: Create fail comment
        # if: failure()
        # uses: peter-evans/create-or-update-comment@v1

@@ -2,8 +2,7 @@ name: autoupdate
 on:
   push:
     branches:
-        - master
-        - unstable
+        - main
 jobs:
   autoupdate:
     name: autoupdate
